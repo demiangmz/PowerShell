@@ -1,0 +1,8 @@
+#Server Uptime
+gwmi win32_operatingsystem | select csname, @{LABEL='LastBootUpTime';Expression={$_.ConverttoDateTime($_.lastbootuptime)}}
+
+#Get Hyper-V Hostname from a VM
+(get-item "HKLM:\SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters").GetValue("HostName")
+
+#Get C: volume free space in GB (replace C: for other volume and GB for MB or KB)
+gwmi Win32_LogicalDisk -Filter "DeviceID='C:'" | select @{Name="Disk";Expression={$_.DeviceID}}, @{Name="Size (GB)";Expression={[math]::round($_.size/1GB,2)}}, @{Name="Free Space (GB)";Expression={[math]::round($_.FreeSpace/1GB,2)}}
