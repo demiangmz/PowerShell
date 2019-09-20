@@ -1,0 +1,9 @@
+#Generate AD User Report with OU name
+
+Get-ADUser -Filter * -SearchBase "OU=Employees,DC=domain,DC=com" -Properties givenName, sn, emailaddress | `
+Select-Object 	@{Label = "Logon Name";Expression = {$_.sAMAccountName}}, 
+  		          @{Label = "First Name";Expression = {$_.GivenName}},  
+                @{Label = "Last Name";Expression = {$_.Surname}}, 
+                @{Label = "Email";Expression = {$_.emailaddress}},
+		            @{Label = "CallCenter";Expression = {(($_.DistinguishedName -split ',')[1] -replace 'OU=')}} | `
+Export-Csv c:\temp\Users.csv -NoTypeInformation
