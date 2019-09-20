@@ -1,0 +1,66 @@
+#----------------------------------------------------------------------------------
+# Script:  Get-GroupHierarchy.ps1
+# Author:  Demian Gomez
+# Date:  11/27/2013
+# Version: 1.0
+# Description: This function outputs the member hierarchy of the target group, for
+# example, if a group has members and inside are other groups nested, it outputs the
+# members of those groups and so on until it reaches the last level (leaves). Can
+# throw an error if the nesting processing finds a loop somewhere in the chain.
+#-----------------------------------------------------------------------------------
+
+#Import AD module
+Import-Module ActiveDirectory -ErrorAction SilentlyContinue
+
+#-------------------
+# AUX variables
+#-------------------
+$GroupList = @{}
+$StartTime = Get-Date 2019-6-1
+$EndTime = Get-Date 2019-12-1
+
+#-------------------
+# Script FUNCTIONS
+#-------------------
+
+Function Get-GroupHierarchy {param([Parameter(Mandatory=$true)][String]$searchGroup)
+
+  $groupMember = Get-ADGroupMember $searchGroup | Sort-Object objectClass -Descending
+
+  foreach ($member in $groupMember) {   
+	  If ($member.objectClass -eq "user"){
+        $TimeCreated = (Get-ADuser $member.sAMAccountName -properties whenCreated).whenCreated
+	      If (($TimeCreated -gt $StartTime) -and ($TimeCreated -lt $EndTime)) {
+        Write-Output "User Name:"
+        Write-Output $member.name 
+        Write-Output "Login:"
+        Write-Output $member.sAMAccountName 
+        Write-Output "Created:" 
+        Write-Output $TimeCreated.ToString("yyy/MM/dd HH:mm")
+        Write-Output "----------------------------------------------------"
+	      } 
+	  }
+    ElseIf ($member.objectClass -eq "group") { 
+    Write-Output ""
+    Write-Output "----------------------------------------------------"	
+    Write-Output "Group Name:" 	
+    Write-Output "----------------------------------------------------"	
+    Write-Output $member.name 
+    Write-Output "Created:"
+    Write-Output (Get-ADGroup $member.sAMAccountName -properties whenCreated).whenCreated.ToString("yyy/MM/dd HH:mm")
+    Write-Output "----------------------------------------------------"	
+	  }
+    
+    If (!($GroupList.ContainsKey($member.name))) { 
+      If ($member.ObjectClass -eq "group") {
+         $GroupList.add($member.name,$member.name)
+         Get-GroupHierarchy $member.name
+      }
+    }
+    Else { Write-Output "Group has already been processed, or there is loop... Please verify." }
+ }
+}
+
+#Example of use:
+$targetGroup = Read-Host "Enter AD group alias to process: "
+Get-GroupHierarchy $TargetGroup
