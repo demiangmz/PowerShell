@@ -57,7 +57,7 @@ Function Get-GroupHierarchy {param([Parameter(Mandatory=$true)][String]$searchGr
          Get-GroupHierarchy $member.name
       }
     }
-    Else { Write-Output "Group has already been processed, or there is loop... Please verify." }
+    Else { Write-Output "Group has already been processed, or there is a loop... Please verify." }
  }
 }
 
