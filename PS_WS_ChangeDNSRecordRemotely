@@ -1,0 +1,13 @@
+#Change -Class parameter to reflect DNS record type:
+#Example: modify a specific 'A' record
+
+$zone='sec.local'
+$dnsrecord='XTEST.sec.local'
+$rec=Get-WmiObject `
+  -ComputerName alpha `
+  -Namespace root/MicrosoftDNS `
+  -Class MicrosoftDNS_AType `
+  -filter "containername='$zone' AND OwnerName='$dnsrecord'"
+$rec.Modify($rec.TTL,"192.168.1.1")
+
+#Credit: http://social.technet.microsoft.com/Forums/scriptcenter/en-US/0ea316f2-8707-419f-801c-d21e74fa1354/vbs-script-to-modify-a-dns-cname-record
