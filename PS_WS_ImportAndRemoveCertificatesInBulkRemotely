@@ -1,0 +1,104 @@
+#Import and Remove certificates remotely with Functions
+
+ Function Import-Certificate {param([String]$certPath, [String]$pfxPass = $pass) 
+    
+    $Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 
+    If ($pfxPass){$Cert.import($certPath,$pfxPass,"Exportable,PersistKeySet") }
+     Else {$Cert.import($certPath)}
+    $store = new-object System.Security.Cryptography.X509Certificates.X509Store $CertStoreName, $CertStoreScope
+    $store.open("MaxAllowed")
+    Write-Host "Installing certificate " $Cert.Subject " to server" $server
+    Start-Sleep -s 3
+    $store.add($Cert)
+    Write-Host "Added certificate with" $Cert.thumbprint "thumbprint to Local Machine store" -ForegroundColor Green
+    $store.close()
+    }
+
+  Function Remove-Certificate { param([string]$certThumbprint)
+    
+    $store = new-object System.Security.Cryptography.X509Certificates.X509Store $CertStoreName, $CertStoreScope
+    $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+    $cert = $store.Certificates | ? {$_.Thumbprint -eq $certThumbprint}
+    If ($cert) {
+      write-host "Deleting certificate: "$cert
+      Start-Sleep -s 3
+      $store.Remove($cert)
+      Write-Host "Deleted certificate from $server!" -ForegroundColor Yellow
+     }
+    Else {Write-Host "Certificate with thumbprint $certThumbprint not found in Local Machine store of $server server" -ForegroundColor Red}
+    $store.Close()
+    }                                        
+
+
+#Functions usage example
+
+##These examples asume that the Temp folder exists on all servers involved in certificate processing
+##Also that the \\server\share\certificate.pfx file exists and it´s password protected.
+##Replace certPath, pfxPass and certThumbprint parameters with your own values
+
+$Servers = Get-Content -Path C:\Temp\Servers.txt
+$Credential = Get-Credential
+$SSLCertPath  = "\\server\share\certificate.pfx"
+
+For ($i = 0; $i -lt $Servers.length; $i++) {
+
+    $currentServer = $Servers[$i].toString()
+    Write-Host 
+    Write-Host "============================="
+    Write-Host "Processing $currentServer..."
+    Write-Host "============================="
+    Write-Host 
+    Write-Host "Copying certificate remotely to $currentServer server..." -ForegroundColor cyan
+     If (Test-Path -Path  "\\$CurrentServer\C$\Temp\certificate.pfx") {
+        Remove-Item -Path "\\$CurrentServer\C$\Temp\certificate.pfx"
+    }
+    Copy-Item $SSLCertPath -Destination "\\$CurrentServer\C$\Temp\" -Force -Verbose
+    
+    $Session = New-PSSession -credential $Credential -ComputerName $currentServer
+    Invoke-Command -Session $Session -scriptblock {   
+    
+    $CertStoreScope = "LocalMachine"
+    $CertStoreName = "My"
+    $server = gc env:computername
+
+    Function Import-Certificate {param([String]$certPath, [String]$pfxPass = $pass) 
+    
+    $Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 
+    If ($pfxPass){$Cert.import($certPath,$pfxPass,"Exportable,PersistKeySet") }
+     Else {$Cert.import($certPath)}
+    $store = new-object System.Security.Cryptography.X509Certificates.X509Store $CertStoreName, $CertStoreScope
+    $store.open("MaxAllowed")
+    Write-Host "Installing certificate " $Cert.Subject " to server" $server
+    Start-Sleep -s 3
+    $store.add($Cert)
+    Write-Host "Added certificate with" $Cert.thumbprint "thumbprint to Local Machine store" -ForegroundColor Green
+    $store.close()
+    }
+
+   Function Remove-Certificate { param([string]$certThumbprint)
+    
+    $store = new-object System.Security.Cryptography.X509Certificates.X509Store $CertStoreName,    $CertStoreScope
+    $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+    $cert = $store.Certificates | ? {$_.Thumbprint -eq $certThumbprint}
+    If ($cert) {
+      write-host "Deleting certificate: "$cert
+      Start-Sleep -s 3
+      $store.Remove($cert)
+      Write-Host "Deleted certificate from $server!" -ForegroundColor Yellow
+     }
+    Else {Write-Host "Certificate with thumbprint $certThumbprint not found in Local Machine store of $server server" -ForegroundColor Red}
+    $store.Close()
+    }                                        
+    
+    #Here I show how to import a new certificate and remove another (useful for periodic certificate renewals). 
+    #To remove the certificate you need the THUMBPRINT value, obtainable from the Certificate Store in Windows.
+    #You can comment out the import or removal part if you only need to perform one operation.
+    
+    Import-Certificate -certPath "C:\Temp\certificate.pfx" -pfxPass "PFXFilePasswordHERE"
+    Write-Host "Sleeping ten..."
+    Start-Sleep -s 10
+    Remove-Certificate -certThumbprint "1234567890ABCDEFGHIJK"
+    If (Test-Path -Path  "\\$CurrentServer\C$\Temp\certificate.pfx") {
+      Remove-Item -Path "\\$CurrentServer\C$\Temp\certificate.pfx"
+    }
+    }
