@@ -1,0 +1,18 @@
+#Modify HOSTS file in bulk
+
+$Servers = Get-Content -Path C:\Temp\Servers.txt
+
+ForEach ($server in $Servers) { 
+    $alivetest = Test-Path "\\$Server\c$\Windows\System32\drivers\etc\hosts"
+    If ($alivetest -eq "True") {
+      Write-Host "Processing $server..." -ForegroundColor White
+      Copy-item "\\$Server\c$\Windows\System32\drivers\etc\hosts" -destination "\\$Server\c$\Windows\System32\drivers\etc\hostsbackup"
+      Add-Content -Encoding UTF8  -Path "\\$Server\c$\Windows\System32\drivers\etc\hosts" -Value "`r`r`n#DB required alias for deploy"
+      Add-Content -Encoding UTF8  -Path "\\$Server\c$\Windows\System32\drivers\etc\hosts" -Value "1.2.3.4      PrimaryDB"
+      Add-Content -Encoding UTF8  -Path "\\$Server\c$\Windows\System32\drivers\etc\hosts" -Value "4.3.2.1      SecondaryDB"
+      Write-Host "updated records on $server" -foregroundcolor green
+    }
+    Else  {
+            Write-Host -foregroundcolor Red "Can't access $Server! Make sure it's online and accesible through SMB" 
+		}
+}	
