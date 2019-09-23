@@ -1,0 +1,13 @@
+#Script to remove users AD group membership
+##For example when the account is moved to an ExEmployees OU you can trigger this script to remove all groups from the account.
+
+$users = get-aduser -Filter * -SearchBase "OU=ExEmployees,DC=domain,DC=com"
+
+Function RemoveMemberships  {param([string]$SAMAccountName)  
+$user = Get-ADUser $SAMAccountName -properties memberof
+$userGroups = $user.memberof
+$userGroups | %{get-adgroup $_ | Remove-ADGroupMember -confirm:$false -member $SAMAccountName}
+$userGroups = $null
+ }
+
+$users | %{RemoveMemberships $_.SAMAccountName}
