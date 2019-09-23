@@ -1,0 +1,26 @@
+#Script to use as Telnet client replacement for legacy Windows Server OS
+
+#Replace IPs and portsToCheck variables with desired ones.
+
+$IPs = 'Server1IP ','Server2IP','Server3IP'
+$portsToCheck = '7500', '7502'
+ 
+foreach ($ip in $IPs) {
+    foreach ($portToCheck in $portsToCheck) {
+ try {       
+       $null = New-Object System.Net.Sockets.TCPClient -ArgumentList $ip,$portToCheck
+       $props = @{
+                        Server = $ip
+                        PortOpen = 'Yes'
+                  }
+     }
+ 
+catch {
+         $props = @{
+                  Server = $ip
+                  PortOpen = 'No'
+                  }
+        }
+New-Object PsObject -Property $props
+}
+}
