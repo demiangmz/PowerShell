@@ -1,0 +1,17 @@
+#Windows Server Quick Hotfix report
+#The script requires a TXT file located at C:\temp with server names (one for each line).
+
+function HotfixReport {
+ $servers = Get-Content "C:\temp\servers.txt"
+ $ErrorActionPreference = 'Stop'
+ ForEach ($computer in $servers) {
+   Try  {
+            Get-HotFix -cn $computer | Select-Object PSComputerName,HotFixID,Description,InstalledBy,InstalledOn | FT -AutoSize
+    }
+   Catch  {
+	 Add-content $computer -path "$env:USERPROFILE\Desktop\NotReachableServers.txt"
+    }
+  }
+}
+
+Hotfixreport > "$env:USERPROFILE\Desktop\HotfixReport.txt"
