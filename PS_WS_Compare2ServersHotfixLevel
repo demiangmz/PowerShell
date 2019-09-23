@@ -1,0 +1,10 @@
+#Compare 2 servers hotfix level
+
+$server1 = "Server1"
+$server2 = "Server2"
+
+$server1Patches = get-hotfix -computerName $server1 | Where-Object {$_.HotFixID -ne "File 1"}
+
+$server2Patches = get-hotfix -computerName $server2 | Where-Object {$_.HotFixID -ne "File 1"}
+
+Compare-Object ($server1Patches) ($server2Patches) -Property HotFixID
