@@ -1,0 +1,13 @@
+#Invoke REST APIs in bulk
+
+$urls = 'URL1','URL2','URL3'
+													
+ForEach ($url in $urls) {
+Try {
+	Write-Host "Testing URL:" $url -foregroundcolor Green
+	Invoke-RestMethod -uri $url
+	} 
+ Catch {
+           Write-Host "Error found:" $_.Exception -ForegroundColor Red
+}
+}
