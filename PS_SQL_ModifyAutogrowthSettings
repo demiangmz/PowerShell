@@ -1,0 +1,25 @@
+#Example on how to modify SQL Server Database AutoGrowth settings from PS
+##It requires the load of an SQL Server assembly so it's better to run this from a SQL server or a machine that has SSMS installed.
+##The example shows how to change a SharePoint content database settings but it can be adjusted for any database
+
+$Server="SQLSRV"     
+[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.SMO") | out-null
+$SMOserver = New-Object ('Microsoft.SqlServer.Management.Smo.Server') -argumentlist $Server
+$databases = $SMOserver.Databases;
+foreach ($DB in $databases | where{$_.Name -like '*Content*'}) {
+  #Set Log File growth
+  foreach ($DBLF in $DB.logfiles) {
+  $DBLF.set_GrowthType("KB");
+  $DBLF.set_Growth("51200"); #50mb 
+  $DBLF.Alter();
+  } 
+  #set File Growth 
+  $DBFG = $DB.FileGroups;
+  Foreach ($DBF in $DBFG.Files) {
+    $DBF.set_GrowthType("KB"); 
+    $DBF.set_Growth("102400"); #100mb 
+    $DBF.Alter();
+  }
+}
+
+#Credit: http://yalla.itgroove.net/2013/03/27/sql-server-powershell-sharepoint-set-autogrowth-on-content-dbs
